@@ -4,6 +4,8 @@ package com.cos.jwt.config;
 import com.cos.jwt.filter.MyFilter1;
 import com.cos.jwt.filter.MyFilter3;
 import com.cos.jwt.jwt.JwtAuthenticationFilter;
+import com.cos.jwt.jwt.JwtAuthorizationFilter;
+import com.cos.jwt.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +25,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final CorsFilter corsFilter;
 
+    private final UserRepository userRepository;
+
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -31,7 +35,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         //시큐리티 필터 체인은 여러개임 BasicAuthenticationFilter 등등
-        http.addFilterBefore(new MyFilter3(), BasicAuthenticationFilter.class); //시큐리티 필터 체인에 꼭 걸 필요는 X
+//        http.addFilterBefore(new MyFilter3(), BasicAuthenticationFilter.class); //시큐리티 필터 체인에 꼭 걸 필요는 X
+
         http.csrf().disable();
         //세션 사용X
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -40,6 +45,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .formLogin().disable() //jwt 서버이기 때문 form 태그 로그인 사용 X
                 .httpBasic().disable() //기본적인 http 로그인 방식도 사용 X
                 .addFilter(new JwtAuthenticationFilter(authenticationManager())) //AuthenticationManager를 파라미터로 줘야 함
+                .addFilter(new JwtAuthorizationFilter(authenticationManager(),userRepository))
                 .authorizeRequests()
                 .antMatchers("/api/v1/user/**")
                 .access("hasRole('ROLE_USER') or hasRole('ROLE_MANAGER') or hasRole('ROLE_ADMIN')")
